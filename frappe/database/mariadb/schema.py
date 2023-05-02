@@ -62,9 +62,8 @@ class MariaDBTable(DBTable):
 			)
 
 		for col in self.add_unique:
-			modify_column_query.append(
-				f"ADD UNIQUE INDEX IF NOT EXISTS {col.fieldname} (`{col.fieldname}`)"
-			)
+			if not frappe.db.has_index(self.table_name, col.fieldname):
+				add_index_query.append(f"ADD UNIQUE INDEX {col.fieldname} (`{col.fieldname}`)")
 
 		for col in self.add_index:
 			# if index key does not exists
