@@ -63,7 +63,12 @@ class MariaDBTable(DBTable):
 
 		for col in self.add_unique:
 			if not frappe.db.has_index(self.table_name, col.fieldname):
-				add_index_query.append(f"ADD UNIQUE INDEX {col.fieldname} (`{col.fieldname}`)")
+				db_version=frappe.db.sql("""SELECT VERSION()""")[0][0]
+				if db_version[0] == 5:
+					# mysql 5.7.40 does not support IF NOT EXISTS for ADD UNIQUE Index
+					add_index_query.append(f"ADD UNIQUE INDEX {col.fieldname} (`{col.fieldname}`)")
+				else:
+					add_index_query.append(f"ADD UNIQUE INDEX IF NOT EXISTS {col.fieldname} (`{col.fieldname}`)")
 
 		for col in self.add_index:
 			# if index key does not exists
