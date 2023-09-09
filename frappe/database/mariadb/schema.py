@@ -65,7 +65,7 @@ class MariaDBTable(DBTable):
 			if not frappe.db.has_index(self.table_name, col.fieldname):
 				db_version=frappe.db.sql("""SELECT VERSION()""")[0][0]
 				if db_version[0] == 5:
-					# mysql 5.7.40 does not support IF NOT EXISTS for ADD UNIQUE Index
+					# mysql>=5.7.4 does not support IF NOT EXISTS for ADD UNIQUE Index
 					add_index_query.append(f"ADD UNIQUE INDEX {col.fieldname} (`{col.fieldname}`)")
 				else:
 					add_index_query.append(f"ADD UNIQUE INDEX IF NOT EXISTS {col.fieldname} (`{col.fieldname}`)")
@@ -132,5 +132,10 @@ class MariaDBTable(DBTable):
 				)
 			elif e.args[0] == 1067:
 				frappe.throw(str(e.args[1]))
+			elif e.args[0] == 1061:
+				# It's possible that ALTER TABLE contains an ADD COLUMN with constrainint unique and an ADD UNIQUE INDEX 
+				# mysql>=5.7.4 doesn't support the IF NOT EXIST option, therefore we simply ignore these errors here 
+				# and remove the IF NOT EXISTS option for mysql 5.x.x
+				print("WARNING! Ignored following error: " + str(e.args[1]))
 			else:
 				raise e
